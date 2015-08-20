@@ -39,7 +39,7 @@ shinyUI(fluidPage(
       condition = "input.mac_attr == 'R'",
       sliderInput("R",
       	label="Total resource in the local community",
-      	min=100,max=1000,value=500
+      	min=100,max=10000,value=5000
       )
       ),  
       
@@ -52,14 +52,14 @@ shinyUI(fluidPage(
       condition = "input.Dr_attr == 'Mean'",
       sliderInput("Dr", 
         label = "Mean value for relative individual distinguishability",
-        min=0.2,max=0.8,value=0.5)
+        min=0.1,max=0.9,value=0.7)
       ),
       
       conditionalPanel(
       condition = "input.Dr_attr == 'Dispersion'",
       sliderInput("disperse.Dr", 
         label = "Dispersion for relative individual distinguishability",
-        min=0.01,max=0.2,value=0.1)
+        min=0.001,max=1,value=0.01)
       ),
 
 	  selectInput("gamma_attr", 
@@ -71,20 +71,20 @@ shinyUI(fluidPage(
       condition = "input.gamma_attr == 'Mean'",
       sliderInput("gamma", 
         label = "Mean value for generalization cost",
-        min=0.01,max=0.2,value=0.1)
+        min=0.001,max=1,value=0.5)
       ),
       
       conditionalPanel(
       condition = "input.gamma_attr == 'Dispersion'",
       sliderInput("disperse.gamma", 
         label = "Dispersion for generalization cost",
-        min=0.01,max=0.2,value=0.1)
+        min=0.001,max=1,value=0.01)
       ),
       
       sliderInput("tau_u", 
         label = "Trophic efficiency (food transferred to biomass)",
-        min=0.1,max=0.5,value=0.25),
-      
+        min=0.01,max=0.5,value=0.15),
+      #actionButton("do", "Get my web"),
       
       helpText("Codes can be found on GitHub in:"),
       a("https://github.com/JadeYu/TrophLab.git")
