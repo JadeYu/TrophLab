@@ -1,11 +1,12 @@
-one_food_web <- function(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse=c(0.1,0.1),color){
-	Y <- try(try_one_food_web(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse,color),silent=T)
+one_food_web <- function(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse=c(0.1,0.1)){
+	Y <- try(try_one_food_web(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse),silent=T)
 	while(class(Y)=="try-error"){
-		Y <- try(try_one_food_web(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse,color))	
+		Y <- try(try_one_food_web(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse))	
 	}
+	Y
 }
 
-try_one_food_web <- function(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse=c(0.1,0.1),color){
+try_one_food_web <- function(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse=c(0.1,0.1)){
 	##calculate all species paramters
 	theta_seq <- pool.theta(nsp,mu,tdistr)
 	sequence <- immig_seq(theta_seq,1:nsp,immig)
@@ -21,7 +22,7 @@ try_one_food_web <- function(nsp,mu,tdistr,immig,e,tau_u,Dr,gamma,R,disperse=c(0
 	community <- generate.pool(theta_seq,Dr_seq,gamma_seq,R_mat) 
 	scenario <-FWA_switch_cost(community,e,tau_u,sequence,omni=F)
 ##omni specifies whether the species can consume the fundamental resource or not
-	show_food_web(scenario$FW,tau_u,lab="",zoom=1.5,color)
+	scenario
 }
 
 ##functions################
@@ -279,29 +280,29 @@ flow_pattern <- function(community,tau_u){
 }
 
 ######functions for graphic demonstration
-show_food_web <- function(community,tau_u,lab="",zoom,color="gray"){
+show_food_web <- function(community,zoom,color="gray"){
 	sp_mat <- community$sp_mat
 	link_mat <- community$link_mat
 	ntl <- max(sp_mat$tl)
-	plot(1~1,col=0,xlim=c(0,1),ylim=c(0,ntl+1),xaxt='n',ylab="trophic level",xlab=lab,cex=zoom,cex.lab=zoom,cex.axis=zoom)
+	plot(1~1,col=0,xlim=c(0,1),ylim=c(0,ntl+1),xaxt='n',main="Food web structure",ylab="trophic level",xlab="",cex=zoom,cex.lab=zoom,cex.axis=zoom)
 	energy <- sp_mat$theta*sp_mat$APN
 	col <- rep(0,length(energy))
 	mu <- mean(sp_mat$theta)
 	if(color=="gray"){
 		col[sp_mat$tl>0] <- paste("gray",round(rescale(energy[sp_mat$tl>0],c(80,0))),sep="")
 	}else if(color=="heat"){
-			col[sp_mat$tl>0] <- heat.colors(50)[round(rescale(energy[sp_mat$tl>0],c(50,1)))]
+			col[sp_mat$tl>0] <- heat.colors(10)[round(rescale(energy[sp_mat$tl>0],c(10,1)))]
 	}else if(color=="topo"){
-			col[sp_mat$tl>0] <- topo.colors(50)[round(rescale(energy[sp_mat$tl>0],c(1,50)))]
+			col[sp_mat$tl>0] <- topo.colors(10)[round(rescale(energy[sp_mat$tl>0],c(10,1)))]
 	}else if(color=="rainbow"){
-			col[sp_mat$tl>0] <- rainbow(50,start=0.2)[round(rescale(energy[sp_mat$tl>0],c(1,50)))]
+			col[sp_mat$tl>0] <- rainbow(10,start=0.2)[round(rescale(energy[sp_mat$tl>0],c(1,10)))]
 	}
 	for(tl in 1:ntl){
 		abline(h=tl,lty=2,lwd=zoom)
 		sps <- sp_mat$index[sp_mat$tl==tl]
 		xseq <- 1:length(sps)/(length(sps)+1)
 		sizes <- sp_mat$theta[sps]
-		sizes <- sizes/mu*2
+		sizes <- (sizes/mu)^0.5*3
 		
 		points(xseq,rep(tl,length(sps)),pch=16,col=col[sps],cex=sizes*zoom)
 	}
@@ -321,28 +322,24 @@ show_food_web <- function(community,tau_u,lab="",zoom,color="gray"){
 
 community_dynamics <- function(invasion,extinction,zoom){
 	time <- 1:length(invasion)
-	plot(invasion~time,ylim=c(0,length(invasion)),xlab="time",pch=16,col=3,ylab="#species",cex=zoom,cex.lab=zoom,cex.axis=zoom)
+	plot(invasion~time,ylim=c(0,length(invasion)),main="Community dynamics through time",xlab="time",pch=16,col=3,ylab="#species",cex=zoom,cex.axis=zoom)
 	points(time,extinction,pch=16,col=2,cex=zoom)
 	points(time,(invasion-extinction),pch=16,col=1,cex=zoom)
-}
-
-graph_output_FWA <- function(scenarios,tau_u,labs,indice,filename,layout,zoom){
-	if(!is.na(filename)){
-		png(filename,width=300*layout[2],height=300*layout[1])
-	par(mfrow=layout)
-	}
-	for(i in 1:length(indice)){
-		show_food_web(scenarios[[indice[i]]]$FW,tau_u,lab=labs[i],zoom)
-	}
-
-	for(i in indice){
-		community_dynamics(scenarios[[i]]$invade,scenarios[[i]]$extinct,zoom)
-	}
 	legend("topleft",c("invasion","extinction","existing"),pch=16,col=3:1,cex=zoom)
-	if(!is.na(filename)){
-		dev.off()
-	}
 }
+
+link_distr <- function(community,zoom){
+	links <- community$link_mat
+	links <- links[1:dim(links)[2],]
+	l_seq <- colSums(links>0)+rowSums(links>0)
+	count <- c()
+	for(l in 1:max(l_seq)){
+		count= c(count,sum(l_seq==l))
+	}
+	plot(1:max(l_seq),count,col=0,xlab="#links",ylab="#species",main="Link distribution",cex.axis=zoom)
+	lines(1:max(l_seq),count,col=2,lwd=zoom)
+}
+
 
 ##metrics for the FWA process
 get_communities_seq <- function(R_seq,theta_seq,Dr,gamma,e,tau_u,immig_seq,omni){
